@@ -26,8 +26,9 @@ defmodule Kira.MixProject do
       name: "kira",
       files: ~w(
         lib mix.exs README.md CONTRIBUTING.md LICENSE
-        CHANGLOG.md test
+        CHANGELOG.md test
       ),
+      maintainers: ["Angus Karl Stewart Thomsen"],
       licenses: ["MIT"],
       links: %{
         "Github" => "https://github.com/AKST/kira",
