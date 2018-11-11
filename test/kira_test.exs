@@ -11,7 +11,7 @@ defmodule KiraTest do
     end
 
     def get_failure_reasons({:error, reasons_with_times}) do
-      Enum.map(reasons_with_times, fn ({reason, _time}) -> reason end)
+      Enum.map(reasons_with_times, fn {reason, _time} -> reason end)
     end
   end
 
@@ -21,14 +21,17 @@ defmodule KiraTest do
     describe "create" do
       test "simple" do
         b = %T.Branch{name: :b}
-        result = T.BranchState.create(b, %{ :b => b })
+        result = T.BranchState.create(b, %{:b => b})
+
         expect = %T.BranchState{
           branch: b,
           awaiting: MapSet.new(),
           blocking: MapSet.new(),
           awaiting_unapply: MapSet.new(),
           blocking_unapply: MapSet.new(),
-          task: :not_started}
+          task: :not_started
+        }
+
         assert result == expect
       end
 
@@ -36,7 +39,7 @@ defmodule KiraTest do
         branch_map = %{
           :a => %T.Branch{name: :a},
           :b => %T.Branch{name: :b, dependencies: [:a]},
-          :c => %T.Branch{name: :c, dependencies: [:a]},
+          :c => %T.Branch{name: :c, dependencies: [:a]}
         }
 
         result = T.BranchState.create(branch_map[:a], branch_map).blocking
@@ -48,7 +51,7 @@ defmodule KiraTest do
         branch_map = %{
           :a => %T.Branch{name: :a, dependencies: [:b, :c]},
           :b => %T.Branch{name: :a, dependencies: []},
-          :c => %T.Branch{name: :a, dependencies: []},
+          :c => %T.Branch{name: :a, dependencies: []}
         }
 
         result = T.BranchState.create(branch_map[:a], branch_map).awaiting
@@ -79,7 +82,7 @@ defmodule KiraTest do
           :a => %T.BranchState{awaiting: MapSet.new([:b, :c])},
           :b => %T.BranchState{awaiting: MapSet.new([:c])},
           :c => %T.BranchState{awaiting: MapSet.new([])},
-          :d => %T.BranchState{awaiting: MapSet.new([])},
+          :d => %T.BranchState{awaiting: MapSet.new([])}
         }
 
         state = %T.RuntimeState{branch_states: branch_states}
@@ -96,30 +99,32 @@ defmodule KiraTest do
 
         result = T.RuntimeState.create(0, [branch_a, branch_b], :infinity)
 
-        expect = {:ok, %T.RuntimeState{
-          config: 0,
-          timeout: :infinity,
-          running: %{},
-          progress: T.Progress.create(2),
-          branch_states: %{
-            :a => %T.BranchState{
-              branch: branch_a,
-              awaiting: MapSet.new(),
-              blocking: MapSet.new([:b]),
-              awaiting_unapply: MapSet.new(),
-              blocking_unapply: MapSet.new(),
-              task: :not_started,
-            },
-            :b => %T.BranchState{
-              branch: branch_b,
-              awaiting: MapSet.new([:a]),
-              blocking: MapSet.new(),
-              awaiting_unapply: MapSet.new(),
-              blocking_unapply: MapSet.new([:a]),
-              task: :not_started,
-            },
-          },
-        }}
+        expect =
+          {:ok,
+           %T.RuntimeState{
+             config: 0,
+             timeout: :infinity,
+             running: %{},
+             progress: T.Progress.create(2),
+             branch_states: %{
+               :a => %T.BranchState{
+                 branch: branch_a,
+                 awaiting: MapSet.new(),
+                 blocking: MapSet.new([:b]),
+                 awaiting_unapply: MapSet.new(),
+                 blocking_unapply: MapSet.new(),
+                 task: :not_started
+               },
+               :b => %T.BranchState{
+                 branch: branch_b,
+                 awaiting: MapSet.new([:a]),
+                 blocking: MapSet.new(),
+                 awaiting_unapply: MapSet.new(),
+                 blocking_unapply: MapSet.new([:a]),
+                 task: :not_started
+               }
+             }
+           }}
 
         assert result == expect
       end
@@ -145,11 +150,14 @@ defmodule KiraTest do
         b = %T.Branch{name: :b, dependencies: [:a]}
         c = %T.Branch{name: :c, dependencies: [:b]}
         d = %T.Branch{name: :d, dependencies: [:b, :c]}
-        state = T.RuntimeState.create(:undefined, [a, b, c, d], :infinity)
+
+        state =
+          T.RuntimeState.create(:undefined, [a, b, c, d], :infinity)
           |> elem(1)
           |> Util.put_in_struct([:branch_states, :a, :task], {:done_applied, 1})
           |> Util.put_in_struct([:branch_states, :b, :task], {:done_applied, 2})
           |> Util.put_in_struct([:branch_states, :c, :task], {:done_applied, 3})
+
         result = T.RuntimeState.resolve_dependencies_of(state, :d)
         assert result == {:ok, %{:b => 2, :c => 3}}
       end
@@ -164,9 +172,12 @@ defmodule KiraTest do
       test "updates those dependencies" do
         a = %T.Branch{name: :a}
         b = %T.Branch{name: :b, dependencies: [:a]}
-        state = T.RuntimeState.create(:undefined, [a, b], :infinity)
+
+        state =
+          T.RuntimeState.create(:undefined, [a, b], :infinity)
           |> elem(1)
           |> Util.put_in_struct([:branch_states, :a, :task], {:running_apply, :undefined, []})
+
         assert state.branch_states[:b].awaiting === MapSet.new([:a])
 
         {:ok, state} = T.RuntimeState.mark_as_applied(state, :a, :undefined)
@@ -179,9 +190,12 @@ defmodule KiraTest do
         a = %T.Branch{name: :a}
         b = %T.Branch{name: :b, dependencies: [:a]}
         c = %T.Branch{name: :c, dependencies: [:b]}
-        state = T.RuntimeState.create(:undefined, [a, b, c], :infinity)
+
+        state =
+          T.RuntimeState.create(:undefined, [a, b, c], :infinity)
           |> elem(1)
           |> Util.put_in_struct([:branch_states, :a, :task], {:done_applied, :undefined})
+
         assert state.branch_states[:a].awaiting_unapply === MapSet.new([])
         assert state.branch_states[:c].awaiting === MapSet.new([:b])
 
@@ -196,11 +210,14 @@ defmodule KiraTest do
         a = %T.Branch{name: :a}
         b = %T.Branch{name: :b}
         c = %T.Branch{name: :c}
-        state = T.RuntimeState.create(:undefined, [a, b, c], :infinity)
+
+        state =
+          T.RuntimeState.create(:undefined, [a, b, c], :infinity)
           |> elem(1)
           |> Util.put_in_struct([:branch_states, :a, :task], {:done_applied, 1})
           |> Util.put_in_struct([:branch_states, :b, :task], {:done_applied, 2})
           |> Util.put_in_struct([:branch_states, :c, :task], {:done_applied, 3})
+
         expected = %{a: 1, b: 2, c: 3}
         result = T.RuntimeState.get_done(state)
         assert result === expected
@@ -210,10 +227,13 @@ defmodule KiraTest do
         a = %T.Branch{name: :a}
         b = %T.Branch{name: :b}
         c = %T.Branch{name: :c}
-        state = T.RuntimeState.create(:undefined, [a, b, c], :infinity)
+
+        state =
+          T.RuntimeState.create(:undefined, [a, b, c], :infinity)
           |> elem(1)
           |> Util.put_in_struct([:branch_states, :a, :task], {:done_applied, 1})
           |> Util.put_in_struct([:branch_states, :c, :task], {:done_applied, 3})
+
         expected = %{a: 1, c: 3}
         result = T.RuntimeState.get_done(state)
         assert result === expected
@@ -226,10 +246,13 @@ defmodule KiraTest do
 
     describe "start" do
       test "it works" do
-        a = %T.Branch{name: :a, unapply: fn (_, _, v) -> {:ok, v} end}
-        state = T.RuntimeState.create(:undefined, [a], :infinity)
+        a = %T.Branch{name: :a, unapply: fn _, _, v -> {:ok, v} end}
+
+        state =
+          T.RuntimeState.create(:undefined, [a], :infinity)
           |> elem(1)
           |> Util.put_in_struct([:branch_states, :a, :task], {:done_applied, 12})
+
         assert Enum.count(state.running) == 0
 
         {:ok, state} = T.Runtime.Unapply.start(state, :a)
@@ -251,7 +274,7 @@ defmodule KiraTest do
 
     describe "start" do
       test "it works" do
-        a = %T.Branch{name: :a, apply: fn (_, _) -> {:ok, 12} end}
+        a = %T.Branch{name: :a, apply: fn _, _ -> {:ok, 12} end}
         {:ok, state} = T.RuntimeState.create(:undefined, [a], :infinity)
         assert state.branch_states.a.task == :not_started
         assert Enum.count(state.running) == 0
@@ -275,92 +298,100 @@ defmodule KiraTest do
     require Logger
 
     defmodule Ok do
-      def a_branch, do: %T.Branch{
-        name: :a,
-        apply: fn(config, _) ->
-          send config, {:collect, :a}
-          {:ok, 2}
-        end
-      }
+      def a_branch,
+        do: %T.Branch{
+          name: :a,
+          apply: fn config, _ ->
+            send(config, {:collect, :a})
+            {:ok, 2}
+          end
+        }
 
-      def b_branch, do: %T.Branch{
-        name: :b,
-        dependencies: [:a],
-        apply: fn(config, dependencies) ->
-          send config, {:collect, :b}
-          {:ok, dependencies[:a] + 2}
-        end
-      }
+      def b_branch,
+        do: %T.Branch{
+          name: :b,
+          dependencies: [:a],
+          apply: fn config, dependencies ->
+            send(config, {:collect, :b})
+            {:ok, dependencies[:a] + 2}
+          end
+        }
 
-      def c_branch, do: %T.Branch{
-        name: :c,
-        dependencies: [:a],
-        apply: fn(config, dependencies) ->
-          :timer.sleep(50)
-          send config, {:collect, :c}
-          {:ok, dependencies[:a] + 3}
-        end
-      }
+      def c_branch,
+        do: %T.Branch{
+          name: :c,
+          dependencies: [:a],
+          apply: fn config, dependencies ->
+            :timer.sleep(50)
+            send(config, {:collect, :c})
+            {:ok, dependencies[:a] + 3}
+          end
+        }
 
-      def d_branch, do: %T.Branch{
-        name: :d,
-        dependencies: [:b, :c],
-        apply: fn(config, dependencies) ->
-          send config, {:collect, :d}
-          {:ok, dependencies[:b] + dependencies[:c]}
-        end,
-      }
+      def d_branch,
+        do: %T.Branch{
+          name: :d,
+          dependencies: [:b, :c],
+          apply: fn config, dependencies ->
+            send(config, {:collect, :d})
+            {:ok, dependencies[:b] + dependencies[:c]}
+          end
+        }
     end
 
     defmodule Partial do
-      def a_branch, do: %T.Branch{
-        name: :a,
-        apply: fn(config, _dependencies) ->
-          send config, {:collect, {:apply, :a}}
-          {:ok, 2}
-        end,
-        unapply: fn(config, _dependencies, _r) ->
-          send config, {:collect, {:unapply, :a}}
-          {:ok, :undefined}
-        end,
-      }
+      def a_branch,
+        do: %T.Branch{
+          name: :a,
+          apply: fn config, _dependencies ->
+            send(config, {:collect, {:apply, :a}})
+            {:ok, 2}
+          end,
+          unapply: fn config, _dependencies, _r ->
+            send(config, {:collect, {:unapply, :a}})
+            {:ok, :undefined}
+          end
+        }
 
-      def b_branch, do: %T.Branch{
-        name: :b,
-        dependencies: [:a],
-        apply: fn(config, _dependencies) ->
-          send config, {:collect, {:apply, :b}}
-          {:ok, 2}
-        end,
-        unapply: fn(config, _dependencies, _r) ->
-          send config, {:collect, {:unapply, :b}}
-          {:ok, :undefined}
-        end,
-      }
+      def b_branch,
+        do: %T.Branch{
+          name: :b,
+          dependencies: [:a],
+          apply: fn config, _dependencies ->
+            send(config, {:collect, {:apply, :b}})
+            {:ok, 2}
+          end,
+          unapply: fn config, _dependencies, _r ->
+            send(config, {:collect, {:unapply, :b}})
+            {:ok, :undefined}
+          end
+        }
 
-      def c_branch, do: %T.Branch{
-        name: :c,
-        dependencies: [:a],
-        apply: fn(config, _dependencies) ->
-          :timer.sleep(50)
-          send config, {:collect, {:apply, :c}}
-          {:ok, 2}
-        end,
-        unapply: fn(config, _dependencies, _r) ->
-          :timer.sleep(50)
-          send config, {:collect, {:unapply, :c}}
-          {:ok, :undefined}
-        end,
-      }
+      def c_branch,
+        do: %T.Branch{
+          name: :c,
+          dependencies: [:a],
+          apply: fn config, _dependencies ->
+            :timer.sleep(50)
+            send(config, {:collect, {:apply, :c}})
+            {:ok, 2}
+          end,
+          unapply: fn config, _dependencies, _r ->
+            :timer.sleep(50)
+            send(config, {:collect, {:unapply, :c}})
+            {:ok, :undefined}
+          end
+        }
 
-      def d_branch, do: %T.Branch{
-        name: :d,
-        dependencies: [:b, :c],
-        apply: fn(config, _dependencies) ->
-          send config, {:collect, {:apply, :d}}
-          {:error, :always_fail}
-        end,
-      }
+      def d_branch,
+        do: %T.Branch{
+          name: :d,
+          dependencies: [:b, :c],
+          apply: fn config, _dependencies ->
+            send(config, {:collect, {:apply, :d}})
+            {:error, :always_fail}
+          end
+        }
     end
 
     def collect_n(0, collected), do: Enum.reverse(collected)
@@ -368,14 +399,17 @@ defmodule KiraTest do
     def collect_n(n, collected) do
       receive do
         {:collect, name} -> collect_n(n - 1, [name | collected])
-      after 500 ->
-        raise "abort, #{collected}"
+      after
+        500 ->
+          raise "abort, #{collected}"
       end
     end
 
     describe "run_tasks" do
       test "works" do
-        result = T.Runtime.run_tasks(self(), [Ok.a_branch, Ok.b_branch, Ok.c_branch, Ok.d_branch])
+        result =
+          T.Runtime.run_tasks(self(), [Ok.a_branch(), Ok.b_branch(), Ok.c_branch(), Ok.d_branch()])
+
         assert result == {:ok, %{a: 2, b: 4, c: 5, d: 9}}
 
         messages = collect_n(4, [])
@@ -383,44 +417,59 @@ defmodule KiraTest do
       end
 
       test "unstartable" do
-        result = T.Runtime.run_tasks(self(), [Ok.b_branch, Ok.c_branch, Ok.d_branch])
+        result = T.Runtime.run_tasks(self(), [Ok.b_branch(), Ok.c_branch(), Ok.d_branch()])
         expect = {:error, :unstartable}
         assert result == expect
       end
 
       test "rollsback on failure" do
-        result = T.Runtime.run_tasks(self(), [
-          Partial.a_branch,
-          Partial.b_branch,
-          Partial.c_branch,
-          Partial.d_branch,
-        ], 1000)
+        result =
+          T.Runtime.run_tasks(
+            self(),
+            [
+              Partial.a_branch(),
+              Partial.b_branch(),
+              Partial.c_branch(),
+              Partial.d_branch()
+            ],
+            1000
+          )
+
         assert Util.is_error(result)
         assert is_list(elem(result, 1))
 
         messages = collect_n(7, [])
+
         assert messages == [
-          {:apply, :a},
-          {:apply, :b},
-          {:apply, :c},
-          {:apply, :d},
-          {:unapply, :b},
-          {:unapply, :c},
-          {:unapply, :a},
-        ]
+                 {:apply, :a},
+                 {:apply, :b},
+                 {:apply, :c},
+                 {:apply, :d},
+                 {:unapply, :b},
+                 {:unapply, :c},
+                 {:unapply, :a}
+               ]
       end
 
       test "apply_exit during rollback" do
         the_culprit = {:failed, :for_some_reason}
+
         bad_task = %T.Branch{
           name: :bad_task,
-          apply: fn(_, _) -> (:timer.sleep(10); {:error, the_culprit}) end,
-          unapply: fn(_, _, _) -> {:ok, :idk} end
+          apply: fn _, _ ->
+            :timer.sleep(10)
+            {:error, the_culprit}
+          end,
+          unapply: fn _, _, _ -> {:ok, :idk} end
         }
+
         good_task = %T.Branch{
           name: :good_task,
-          apply: fn(_, _) -> (:timer.sleep(75); {:ok, :lol}) end,
-          unapply: fn(_, _, _) -> {:ok, :idk} end
+          apply: fn _, _ ->
+            :timer.sleep(75)
+            {:ok, :lol}
+          end,
+          unapply: fn _, _, _ -> {:ok, :idk} end
         }
 
         # the good_task should exit after the bad_task fails, meaning
@@ -431,13 +480,21 @@ defmodule KiraTest do
 
       test "rollback without unapply callback" do
         the_culprit = {:failed, :for_some_reason}
+
         bad_task = %T.Branch{
           name: :bad_task,
-          apply: fn(_, _) -> (:timer.sleep(10); {:error, the_culprit}) end,
+          apply: fn _, _ ->
+            :timer.sleep(10)
+            {:error, the_culprit}
+          end
         }
+
         good_task = %T.Branch{
           name: :good_task,
-          apply: fn(_, _) -> (:timer.sleep(75); {:ok, :lol}) end,
+          apply: fn _, _ ->
+            :timer.sleep(75)
+            {:ok, :lol}
+          end
         }
 
         # the good_task should exit after the bad_task fails, meaning
@@ -449,11 +506,11 @@ defmodule KiraTest do
       test "will treat a crash as a retry" do
         will_crash = %T.Branch{
           name: :bad_task,
-          apply: fn(_, _) ->
+          apply: fn _, _ ->
             420 / 0
           end,
-          on_apply_error: fn(parent, _, error, _) ->
-            send parent, :did_retry
+          on_apply_error: fn parent, _, error, _ ->
+            send(parent, :did_retry)
             {:retry, false}
           end
         }
@@ -472,4 +529,3 @@ defmodule KiraTest do
     end
   end
 end
-

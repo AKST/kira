@@ -7,7 +7,6 @@ defmodule Kira.MixProject do
       name: "Kira",
       package: package(),
       description: description(),
-
       version: "0.1.0",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
@@ -31,14 +30,14 @@ defmodule Kira.MixProject do
       maintainers: ["Angus Karl Stewart Thomsen"],
       licenses: ["MIT"],
       links: %{
-        "Github" => "https://github.com/AKST/kira",
-      },
+        "Github" => "https://github.com/AKST/kira"
+      }
     ]
   end
 
   def deps do
     [
-      {:ex_doc, "~> 0.19.1", only: :dev},
+      {:ex_doc, "~> 0.19.1", only: :dev}
     ]
   end
 end
