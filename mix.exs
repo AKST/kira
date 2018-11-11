@@ -14,7 +14,9 @@ defmodule Kira.MixProject do
     ]
   end
 
-  def application, do: []
+  def application, do: [
+    extra_applications: [:logger]
+  ]
 
   defp description do
     "A conncurrent task scheduler with rollback capabilities"

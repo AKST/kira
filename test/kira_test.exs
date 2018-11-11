@@ -521,6 +521,44 @@ defmodule KiraTest do
         Logger.flush()
       end
 
+
+      @tag :skip
+      test "can recover in retry" do
+        # on the second call it will succeed
+        do_fail = (
+          outside = self()
+          stateful_process = spawn(fn ->
+            receive do
+              :get -> send(outside, {:do, true})
+            end
+            receive do
+              :get -> send(outside, {:do, false})
+            end
+          end)
+          fn () ->
+            send(stateful_process, :get)
+            receive do
+              {:do, state} -> state
+            end
+          end
+        )
+
+        will_retry = %T.Branch{
+          name: :will_retry,
+
+          apply: fn(_, _) ->
+            if do_fail.(), do: {:error, 0}, else: {:ok, 0}
+          end,
+
+          on_apply_error: fn(parent, _, error, _) ->
+            {:retry, true}
+          end
+        }
+
+        result = T.Runtime.run_tasks(self(), [will_retry], 1000)
+        assert result === %{will_retry: 0}
+      end
+
       # TODO test retry retrying a rollback
       #
       # TODO test usage of tasks that fail using exceptions
