@@ -1,6 +1,6 @@
 # Kira
 
-> 🚨 Currently beta grade software, I wouldn't recommend usage in production systems
+> 🚨 Currently beta grade software, I wouldn't recommend usage in production systems, or your personal projects for the matter 😂
 
 A concurrent task scheduler, intended to maximize through put of
 predefined tasks with clear dependencies on each other to run in
