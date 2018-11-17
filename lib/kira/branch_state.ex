@@ -2,6 +2,8 @@ defmodule Kira.BranchState do
   require Kira.Branch, as: Branch
   require Kira.Util, as: Util
 
+  @moduledoc false
+
   defstruct [
     :branch,
     :awaiting,

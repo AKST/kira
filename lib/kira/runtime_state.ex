@@ -4,6 +4,8 @@ defmodule Kira.RuntimeState do
   require Kira.Progress, as: Progress
   require Kira.Util, as: Util
 
+  @moduledoc false
+
   defstruct [:config, :branch_states, :running, :timeout, :progress]
 
   @type branches :: %{required(atom()) => BranchState.t()}

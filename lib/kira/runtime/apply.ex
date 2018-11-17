@@ -7,6 +7,8 @@ defmodule Kira.Runtime.Apply do
 
   require Logger
 
+  @moduledoc false
+
   @spec apply_dispatch(
           source :: pid,
           branch :: Branch.t(),

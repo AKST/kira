@@ -7,6 +7,7 @@ defmodule Kira.Runtime do
   require Kira.RuntimeState, as: RuntimeState
   require Kira.Util, as: Util
 
+  @doc false
   @spec unapply_loop(state :: RuntimeState.t()) :: {:error, any}
   def unapply_loop(state) do
     next_step =
@@ -57,6 +58,7 @@ defmodule Kira.Runtime do
     end
   end
 
+  @doc false
   @spec apply_loop(state :: RuntimeState.t()) :: Util.result(RuntimeState.t())
   def apply_loop(state = %RuntimeState{}) do
     next_step =
@@ -119,6 +121,7 @@ defmodule Kira.Runtime do
     end
   end
 
+  @doc false
   @spec start_unapply_loop(state :: RuntimeState.t()) :: {:error, any}
   def start_unapply_loop(state) do
     ready_tasks = RuntimeState.find_unapply_ready(state)
@@ -129,6 +132,10 @@ defmodule Kira.Runtime do
     end
   end
 
+  @doc """
+  Used to execute the tasks you have defined.
+  """
+  @spec run_tasks(config :: any, tasks :: list(Branch.t())) :: Util.result(map)
   @spec run_tasks(config :: any, tasks :: list(Branch.t()), timeout :: timeout) ::
           Util.result(map)
   def run_tasks(config, tasks, timeout \\ :infinity) do

@@ -5,6 +5,8 @@ defmodule Kira.Runtime.Unapply do
   require Kira.RuntimeState, as: RuntimeState
   require Kira.Util, as: Util
 
+  @moduledoc false
+
   @spec unapply_dispatch(
           source :: pid,
           branch :: Branch.t(),

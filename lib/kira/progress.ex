@@ -1,10 +1,9 @@
 defmodule Kira.Progress do
-  @moduledoc """
-  Originally progress was tracked in RuntimeState as a integer that started
-  out as the number of branches, and would indecate completion once equal
-  to 0. But that really didn't accomodate for rollbacks, so this data
-  type was created to track progression with a richer data type.
-  """
+  @moduledoc false
+  # Originally progress was tracked in RuntimeState as a integer that started
+  # out as the number of branches, and would indecate completion once equal
+  # to 0. But that really didn't accomodate for rollbacks, so this data
+  # type was created to track progression with a richer data type.
 
   # TODO check if we need the sets of what is doing what
   defstruct [
