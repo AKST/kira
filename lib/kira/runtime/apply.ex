@@ -1,4 +1,4 @@
-defmodule Kira.Apply do
+defmodule Kira.Runtime.Apply do
   require Kira.Branch, as: Branch
   require Kira.BranchState, as: BranchState
   require Kira.Progress, as: Progress
