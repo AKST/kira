@@ -2,6 +2,7 @@ defmodule Kira.Branch do
   require Kira.Util, as: Util
 
   defmodule Defaults do
+    @moduledoc false
     def apply_default(_, _), do: {:error, :unimplemented}
   end
 

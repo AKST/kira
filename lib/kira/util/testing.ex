@@ -1,4 +1,6 @@
 defmodule Kira.Util.Testing do
+  @moduledoc false
+
   def is_error({:error, _}), do: true
   def is_error(_), do: false
 

@@ -82,8 +82,7 @@ defmodule Kira.Progress do
   @spec unapply_done?(progress :: t) :: boolean
   def unapply_done?(progress) do
     progress.unapplied == progress.applied && MapSet.size(progress.applies_running) == 0 &&
-      MapSet.size(progress.applies_retrying) == 0 &&
-      MapSet.size(progress.unapplies_running) == 0 &&
+      MapSet.size(progress.applies_retrying) == 0 && MapSet.size(progress.unapplies_running) == 0 &&
       MapSet.size(progress.unapplies_retrying) == 0
   end
 end

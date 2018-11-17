@@ -106,8 +106,7 @@ defmodule Kira.RuntimeState do
     with {:ok, branch} <- get_branch(state, branch_name),
          errors = BranchState.get_errors(branch),
          {:ok, state} <- set_branch_task(state, branch_name, {:running_apply, pid, errors}),
-         {:ok, state} <-
-           Util.result_reduce(branch.blocking_unapply, state, updated_unapply_state) do
+         {:ok, state} <- Util.result_reduce(branch.blocking_unapply, state, updated_unapply_state) do
       # record the fact the this pid is associated with this branch name
       running = Map.put(state.running, pid, branch_name)
       progress = Progress.record_apply_start(state.progress, branch_name)
@@ -154,8 +153,7 @@ defmodule Kira.RuntimeState do
     with {:ok, pid} <- get_branch_pid(state, branch_name),
          {:ok, state} <- set_branch_task(state, branch_name, :done_unapplied),
          {:ok, branch} <- get_branch(state, branch_name),
-         {:ok, state} <-
-           Util.result_reduce(branch.blocking_unapply, state, updated_blocked_state) do
+         {:ok, state} <- Util.result_reduce(branch.blocking_unapply, state, updated_blocked_state) do
       running = Map.drop(state.running, [pid])
       progress = Progress.record_unapply_done(state.progress, branch_name)
       {:ok, %{state | running: running, progress: progress}}

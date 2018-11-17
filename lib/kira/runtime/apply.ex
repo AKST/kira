@@ -37,9 +37,7 @@ defmodule Kira.Runtime.Apply do
         send(source, {:apply_retry_exit, branch, {:retry, false}})
 
       other ->
-        Logger.error(
-          "[task_tree.on_apply_error_dispatch] invalid on_apply_error, not retrying"
-        )
+        Logger.error("[task_tree.on_apply_error_dispatch] invalid on_apply_error, not retrying")
 
         send(source, {:apply_retry_exit, branch, {:retry, false}})
     end
@@ -53,8 +51,7 @@ defmodule Kira.Runtime.Apply do
   defp start_impl(state = %RuntimeState{}, branch_state, dependencies) do
     branch = branch_state.branch
 
-    pid =
-      spawn_link(__MODULE__, :apply_dispatch, [self(), branch, state.config, dependencies])
+    pid = spawn_link(__MODULE__, :apply_dispatch, [self(), branch, state.config, dependencies])
 
     RuntimeState.mark_as_applying(state, branch.name, pid)
   end

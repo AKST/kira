@@ -230,32 +230,36 @@ defmodule Kira.RuntimeTest do
     @tag :skip
     test "can recover in retry" do
       # on the second call it will succeed
-      do_fail = (
-        outside = self()
-        stateful_process = spawn(fn ->
-          receive do
-            :get -> send(outside, {:do, true})
+      do_fail =
+        (
+          outside = self()
+
+          stateful_process =
+            spawn(fn ->
+              receive do
+                :get -> send(outside, {:do, true})
+              end
+
+              receive do
+                :get -> send(outside, {:do, false})
+              end
+            end)
+
+          fn ->
+            send(stateful_process, :get)
+
+            receive do
+              {:do, state} -> state
+            end
           end
-          receive do
-            :get -> send(outside, {:do, false})
-          end
-        end)
-        fn () ->
-          send(stateful_process, :get)
-          receive do
-            {:do, state} -> state
-          end
-        end
-      )
+        )
 
       will_retry = %T.Branch{
         name: :will_retry,
-
-        apply: fn(_, _) ->
+        apply: fn _, _ ->
           if do_fail.(), do: {:error, 0}, else: {:ok, 0}
         end,
-
-        on_apply_error: fn(parent, _, error, _) ->
+        on_apply_error: fn parent, _, error, _ ->
           {:retry, true}
         end
       }

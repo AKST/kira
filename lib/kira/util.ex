@@ -1,4 +1,6 @@
 defmodule Kira.Util do
+  @moduledoc false
+
   @type result(a) :: {:ok, a} | {:error, any}
 
   # @spec result_reduce(

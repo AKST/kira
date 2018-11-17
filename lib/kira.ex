@@ -6,6 +6,7 @@ defmodule Kira do
   @spec run_tasks(config :: any, tasks :: list(Branch.t())) :: Util.result(map)
   defdelegate run_tasks(config, tasks), to: Runtime
 
-  @spec run_tasks(config :: any, tasks :: list(Branch.t()), timeout :: timeout) :: Util.result(map)
+  @spec run_tasks(config :: any, tasks :: list(Branch.t()), timeout :: timeout) ::
+          Util.result(map)
   defdelegate run_tasks(config, tasks, timeout), to: Runtime
 end
