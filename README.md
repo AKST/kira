@@ -1,4 +1,4 @@
-# Kira
+# About
 
 > 🚨 Currently beta grade software, I wouldn't recommend usage in production systems, or your personal projects for the matter 😂
 

@@ -7,10 +7,18 @@ defmodule Kira.MixProject do
       name: "Kira",
       package: package(),
       description: description(),
-      version: "0.1.0",
+      version: "0.1.1",
       elixir: "~> 1.7",
       start_permanent: Mix.env() == :prod,
-      deps: deps()
+      deps: deps(),
+      docs: [
+        main: "Kira",
+        extras: [
+          "README.md",
+          "CHANGELOG.md",
+          "CONTRIBUTING.md",
+        ]
+      ]
     ]
   end
 
