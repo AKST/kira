@@ -521,7 +521,6 @@ defmodule KiraTest do
         Logger.flush()
       end
 
-
       @tag :skip
       test "can recover in retry" do
         # on the second call it will succeed
