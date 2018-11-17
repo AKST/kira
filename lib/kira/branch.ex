@@ -1,6 +1,25 @@
 defmodule Kira.Branch do
   require Kira.Util, as: Util
 
+  @moduledoc """
+  Branches are a declarive means of specifying the indivisual
+  nodes of graph of tasks.
+
+  ## Example
+
+  ```ex
+  %Kira.Branch{
+    name: :example.com,
+    dependencies: [],
+    apply: fn (context, _deps) ->
+      fetcher = context[:fetcher]
+      fetcher.(:get, url: "http://www.example.com")
+    end
+  }
+  ```
+
+  """
+
   defmodule Defaults do
     @moduledoc false
     def apply_default(_, _), do: {:error, :unimplemented}

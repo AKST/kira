@@ -38,7 +38,7 @@ defmodule Kira.Runtime.Apply do
       :undefined ->
         send(source, {:apply_retry_exit, branch, {:retry, false}})
 
-      other ->
+      _other ->
         Logger.error("[task_tree.on_apply_error_dispatch] invalid on_apply_error, not retrying")
 
         send(source, {:apply_retry_exit, branch, {:retry, false}})

@@ -1,13 +1,12 @@
 defmodule Kira.Runtime do
   require Kira.Branch, as: Branch
-  require Kira.BranchState, as: BranchState
-  require Kira.Progress, as: Progress
   require Kira.Runtime.Unapply, as: Unapply
   require Kira.Runtime.Apply, as: Apply
   require Kira.RuntimeState, as: RuntimeState
   require Kira.Util, as: Util
 
-  @doc false
+  @moduledoc false
+
   @spec unapply_loop(state :: RuntimeState.t()) :: {:error, any}
   def unapply_loop(state) do
     next_step =
@@ -33,7 +32,7 @@ defmodule Kira.Runtime do
         {:apply_exit, _, {:error, _}} ->
           {:error, {:not_implemented, {:unapply_loop, :bad_apply_exit}}}
 
-        {:apply_retry_exit, _branch, msg} ->
+        {:apply_retry_exit, _branch, _msg} ->
           {:error, {:not_implemented, {:unapply_loop, :apply_retry_exit}}}
 
         # We're safe to ignore this, because this is the result of a
@@ -58,7 +57,6 @@ defmodule Kira.Runtime do
     end
   end
 
-  @doc false
   @spec apply_loop(state :: RuntimeState.t()) :: Util.result(RuntimeState.t())
   def apply_loop(state = %RuntimeState{}) do
     next_step =
@@ -121,7 +119,6 @@ defmodule Kira.Runtime do
     end
   end
 
-  @doc false
   @spec start_unapply_loop(state :: RuntimeState.t()) :: {:error, any}
   def start_unapply_loop(state) do
     ready_tasks = RuntimeState.find_unapply_ready(state)
@@ -132,9 +129,6 @@ defmodule Kira.Runtime do
     end
   end
 
-  @doc """
-  Used to execute the tasks you have defined.
-  """
   @spec run_tasks(config :: any, tasks :: list(Branch.t())) :: Util.result(map)
   @spec run_tasks(config :: any, tasks :: list(Branch.t()), timeout :: timeout) ::
           Util.result(map)

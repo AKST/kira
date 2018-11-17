@@ -88,7 +88,7 @@ defmodule Kira.BranchState do
   @spec is_complete(branch :: t()) :: boolean
   def is_complete(t) do
     case t.task do
-      {:done_applied, value} -> true
+      {:done_applied, _value} -> true
       _ -> false
     end
   end

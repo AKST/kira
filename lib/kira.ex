@@ -3,6 +3,11 @@ defmodule Kira do
   require Kira.Runtime, as: Runtime
   require Kira.Util, as: Util
 
+  @moduledoc """
+  The main public interface of this library, with the
+  exception of the `Kira.Branch` module.
+  """
+
   @doc """
   Used to execute the tasks you have defined.
 
