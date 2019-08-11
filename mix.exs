@@ -49,7 +49,7 @@ defmodule Kira.MixProject do
   def deps do
     [
       {:ex_doc, "~> 0.19.1", only: :dev},
-      {:dialyxir, "~> 0.5", only: [:dev], runtime: false}
+      {:dialyxir, "~> 1.0.0-rc.6", only: [:dev], runtime: false}
     ]
   end
 end

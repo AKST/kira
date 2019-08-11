@@ -114,6 +114,7 @@ defmodule Kira2.Task do
     end
   end
 
+  @spec get_errors(task :: t) :: errors
   def get_errors(task) do
     case task.state do
       {:running_apply, _, errors} -> errors
@@ -123,6 +124,38 @@ defmodule Kira2.Task do
       {:failed, errors} -> errors
       _ -> []
     end
+  end
+
+  def put_in_awaiting(task, other_task_name) do
+    %{task | awaiting: MapSet.put(task.awaiting, other_task_name)}
+  end
+
+  def put_in_awaiting_unapply(task, other_task_name) do
+    %{task | awaiting_unapply: MapSet.put(task.awaiting_unapply, other_task_name)}
+  end
+
+  def put_in_blocking(task, other_task_name) do
+    %{task | blocking: MapSet.put(task.blocking, other_task_name)}
+  end
+
+  def put_in_blocking_unapply(task, other_task_name) do
+    %{task | blocking_unapply: MapSet.put(task.blocking_unapply, other_task_name)}
+  end
+
+  def drop_from_awaiting(task, other_task_name) do
+    %{task | awaiting: MapSet.delete(task.awaiting, other_task_name)}
+  end
+
+  def drop_from_awaiting_unapply(task, other_task_name) do
+    %{task | awaiting_unapply: MapSet.delete(task.awaiting_unapply, other_task_name)}
+  end
+
+  def drop_from_blocking(task, other_task_name) do
+    %{task | blocking: MapSet.delete(task.blocking, other_task_name)}
+  end
+
+  def drop_from_blocking_unapply(task, other_task_name) do
+    %{task | blocking_unapply: MapSet.delete(task.blocking_unapply, other_task_name)}
   end
 end
 
