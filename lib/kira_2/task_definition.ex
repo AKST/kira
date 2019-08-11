@@ -20,10 +20,14 @@ defmodule Kira2.TaskDefinition do
   @type error_result :: {:retry, boolean} | {:retry_after, integer} | :not_implemented
 
   @type apply_payload(k, c) :: {:apply, c, dependencies(k)}
-  @type apply_error_payload(k, c) :: {:apply_error, integer, apply_payload(k, c)}
+
+  # the 3rd parameter is the last error that occured
+  @type apply_error_payload(k, c) :: {:apply_error, integer, any, apply_payload(k, c)}
 
   @type unapply_payload(k, c, r) :: {:unapply, c, dependencies(k), r}
-  @type unapply_error_payload(k, c, r) :: {:unapply_error, integer, unapply_payload(k, c, r)}
+
+  # the 3rd parameter is the last error that occured
+  @type unapply_error_payload(k, c, r) :: {:unapply_error, integer, any, unapply_payload(k, c, r)}
 
   @type dispatcher(k, c, r) ::
           (apply_payload(k, c) -> apply_result(r))

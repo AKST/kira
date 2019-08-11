@@ -1,97 +1,109 @@
 defmodule Kira2.Runtime.Apply do
-  # require Kira.Branch, as: Branch
-  # require Kira.BranchState, as: BranchState
-  # require Kira.Progress, as: Progress
-  # require Kira.RuntimeState, as: RuntimeState
-  # require Kira.Util, as: Util
+  require Kira2.TaskDefinition, as: TaskDefinition
+  require Kira2.Task, as: Task
+  require Kira2.Progress, as: Progress
+  require Kira2.RuntimeState, as: RuntimeState
+  require Kira.Util, as: Util
 
-  # require Logger
+  require Logger
 
-  # @moduledoc false
+  @moduledoc false
 
-  # @spec apply_dispatch(
-  #         source :: pid,
-  #         branch :: Branch.t(),
-  #         config :: any,
-  #         dependencies :: map()
-  #       ) :: any
-  # def apply_dispatch(source, branch, config, dependencies) do
-  #   result = branch.apply.(config, dependencies)
-  #   send(source, {:apply_exit, branch, result})
-  # end
+  @doc """
+  The initial entry point for a tasks apply pass.
+  """
+  @spec apply_dispatch(
+          source :: pid,
+          task_def :: TaskDefinition.t(),
+          config :: any,
+          dependencies :: map()
+        ) :: any
+  def apply_dispatch(source, td, config, dependencies) do
+    case td.dispatcher do
+      callback when is_function(callback, 2) ->
+        result = td.dispatcher.(td.name, {:apply, config, dependencies})
+        send(source, {:apply_exit, td, result})
 
-  # @spec on_apply_error_dispatch(
-  #         source :: pid,
-  #         branch :: Branch.t(),
-  #         config :: any,
-  #         dependencies :: map(),
-  #         errors :: BranchState.errors()
-  #       ) :: any
-  # def on_apply_error_dispatch(source, branch, config, dependencies, errors) do
-  #   case branch.on_apply_error do
-  #     on_apply_error when is_function(on_apply_error, 4) ->
-  #       {latest_error, _} = List.first(errors)
-  #       error_count = Enum.count(errors)
-  #       result = on_apply_error.(config, dependencies, latest_error, error_count)
-  #       send(source, {:apply_retry_exit, branch, result})
+      _other ->
+        Logger.error("[task_tree.on_apply_error_dispatch] invalid on_apply_error, not retrying")
+        # TODO figure out a more appropiate message type
+        send(source, {:apply_exit, td, :exit})
+    end
+  end
 
-  #     :undefined ->
-  #       send(source, {:apply_retry_exit, branch, {:retry, false}})
+  @doc """
+  The entry point on failed task executions.
+  """
+  @spec on_apply_error_dispatch(
+          source :: pid,
+          td :: TaskDefinition.t(),
+          config :: any,
+          dependencies :: map(),
+          errors :: Task.errors()
+        ) :: any
+  def on_apply_error_dispatch(source, td, config, dependencies, errors) do
+    case td.dispatcher do
+      callback when is_function(callback, 2) ->
+        {latest_error, _} = List.first(errors)
 
-  #     _other ->
-  #       Logger.error("[task_tree.on_apply_error_dispatch] invalid on_apply_error, not retrying")
+        result =
+          callback.(td.name, {
+            :apply_error,
+            Enum.count(errors),
+            latest_error,
+            {:apply, config, dependencies}
+          })
 
-  #       send(source, {:apply_retry_exit, branch, {:retry, false}})
-  #   end
-  # end
+        send(source, {:apply_retry_exit, td, result})
 
-  # @spec start_impl(
-  #         state :: RuntimeState.t(),
-  #         branch_state :: BranchState.t(),
-  #         dependencies :: map
-  #       ) :: Util.result(RuntimeState.t())
-  # defp start_impl(state = %RuntimeState{}, branch_state, dependencies) do
-  #   branch = branch_state.branch
+      :undefined ->
+        send(source, {:apply_retry_exit, td, {:retry, false}})
 
-  #   pid = spawn_link(__MODULE__, :apply_dispatch, [self(), branch, state.config, dependencies])
+      _other ->
+        Logger.error("[task_tree.on_apply_error_dispatch] invalid on_apply_error, not retrying")
+        send(source, {:apply_retry_exit, td, {:retry, false}})
+    end
+  end
 
-  #   RuntimeState.mark_as_applying(state, branch.name, pid)
-  # end
+  @spec start_impl(
+          state :: RuntimeState.t(),
+          task :: Task.t(),
+          dependencies :: map
+        ) :: Util.result(RuntimeState.t())
+  defp start_impl(state = %RuntimeState{}, task, dependencies) do
+    td = task.definition
+    pid = spawn_link(__MODULE__, :apply_dispatch, [self(), td, state.config, dependencies])
+    RuntimeState.mark_as_applying(state, td.name, pid)
+  end
 
-  # @spec start(state :: RuntimeState.t(), branch_name :: atom) :: Util.result(RuntimeState.t())
-  # def start(state = %RuntimeState{}, branch_name) do
-  #   with {:ok, dependencies} <- RuntimeState.resolve_dependencies_of(state, branch_name),
-  #        {:ok, branch_state} <- RuntimeState.get_branch(state, branch_name) do
-  #     start_impl(state, branch_state, dependencies)
-  #   end
-  # end
+  @spec start(state :: RuntimeState.t(), task_name :: atom) :: Util.result(RuntimeState.t())
+  def start(state = %RuntimeState{}, task_name) do
+    with {:ok, dependencies} <- RuntimeState.resolve_dependencies_of(state, task_name),
+         {:ok, task} <- RuntimeState.find_task(state, task_name) do
+      start_impl(state, task, dependencies)
+    end
+  end
 
-  # @doc """
-  # Here we'll determine if the process should be reattempted or we need to start a rollback.
-  # """
-  # @spec reattmpt_failed(state :: RuntimeState.t(), branch :: Branch.t(), error :: any) ::
-  #         Util.result(any)
-  # def reattmpt_failed(state, branch, error) do
-  #   with {:ok, pid} <- RuntimeState.get_branch_pid(state, branch.name),
-  #        {:ok, state} <- RuntimeState.record_failure(state, branch.name, error),
-  #        {:ok, dependencies} <- RuntimeState.resolve_dependencies_of(state, branch.name),
-  #        {:ok, branch_s} <- RuntimeState.get_branch(state, branch.name) do
-  #     errors = BranchState.get_errors(branch_s)
-  #     args = [self(), branch_s.branch, state.config, dependencies, errors]
-  #     retrying_pid = spawn_link(__MODULE__, :on_apply_error_dispatch, args)
+  @doc """
+  Here we'll determine if the process should be reattempted or we need to start a rollback.
+  """
+  @spec reattmpt_failed(state :: RuntimeState.t(), task_def :: TaskDefinition.t(), error :: any) ::
+          Util.result(any)
+  def reattmpt_failed(state, task_def, error) do
+    task_name = task_def.name
 
-  #     state = %{
-  #       state
-  #       | running:
-  #           state.running
-  #           |> Map.drop([pid])
-  #           |> Map.put(retrying_pid, branch.name),
-  #         progress:
-  #           state.progress
-  #           |> Progress.record_apply_failure(branch.name)
-  #     }
+    with {:ok, pid} <- RuntimeState.find_task_pid(state, task_name),
+         {:ok, state} <- RuntimeState.record_failure(state, task_name, error),
+         {:ok, dependencies} <- RuntimeState.resolve_dependencies_of(state, task_name),
+         {:ok, task} <- RuntimeState.find_task(state, task_name) do
+      errors = Task.get_errors(task)
+      args = [self(), task.definition, state.config, dependencies, errors]
+      retrying_pid = spawn_link(__MODULE__, :on_apply_error_dispatch, args)
 
-  #     RuntimeState.record_apply_retry(state, branch.name, retrying_pid)
-  #   end
-  # end
+      # TODO move into record_apply_retry ?
+      progress = Progress.record_apply_failure(state.progress, task_name, pid, retrying_pid)
+      state = %{state | progress: progress}
+      RuntimeState.record_apply_retry(state, task_name, retrying_pid)
+    end
+  end
 end

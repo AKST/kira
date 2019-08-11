@@ -1,60 +1,58 @@
 defmodule Kira2.Runtime.Unapply do
-  # require Kira2.Branch, as: Branch
-  # require Kira.Task, as: Task
-  # require Kira.RuntimeState, as: RuntimeState
-  # require Kira.Util, as: Util
+  require Kira2.TaskDefinition, as: TaskDefinition
+  require Kira2.Task, as: Task
+  require Kira2.RuntimeState, as: RuntimeState
+  require Kira2.Progress, as: Progress
+  require Kira.Util, as: Util
 
-  # @moduledoc false
+  @moduledoc false
 
-  # @spec unapply_dispatch(
-  #         source :: pid,
-  #         branch :: Branch.t(),
-  #         config :: any,
-  #         dependencies :: map(),
-  #         value :: any
-  #       ) :: any
-  # def unapply_dispatch(source, branch, config, dependencies, value) do
-  #   case branch.unapply do
-  #     unapply when is_function(unapply, 3) ->
-  #       result = unapply.(config, dependencies, value)
-  #       send(source, {:unapply_exit, branch, result})
+  @spec unapply_dispatch(
+          source :: pid,
+          td :: TaskDefinition.t(),
+          config :: any,
+          dependencies :: map(),
+          value :: any
+        ) :: any
+  def unapply_dispatch(source, td, config, dependencies, value) do
+    case td.dispatcher do
+      dispatcher when is_function(dispatcher, 2) ->
+        # TODO check the return isn't malformed
+        result = dispatcher.(td.name, {:unapply, config, dependencies, value})
+        send(source, {:unapply_exit, td, result})
 
-  #     :undefined ->
-  #       send(source, {:unapply_exit, branch, {:ok, :undefined}})
-  #   end
-  # end
+      :undefined ->
+        send(source, {:unapply_exit, td, {:ok, :undefined}})
 
-  # @spec start_impl(
-  #         state :: RuntimeState.t(),
-  #         branch_state :: Task.t(),
-  #         dependencies :: map,
-  #         value :: any
-  #       ) :: Util.result(RuntimeState.t())
-  # defp start_impl(state = %RuntimeState{}, branch_state, dependencies, value) do
-  #   branch = branch_state.branch
+      _other ->
+        # TODO think of a better way to handel this
+        send(source, {:unapply_exit, td, :exit})
+    end
+  end
 
-  #   pid =
-  #     spawn_link(__MODULE__, :unapply_dispatch, [
-  #       self(),
-  #       branch,
-  #       state.config,
-  #       dependencies,
-  #       value
-  #     ])
+  @spec start(state :: RuntimeState.t(), task_name :: atom) :: Util.result(RuntimeState.t())
+  def start(state = %RuntimeState{}, task_name) do
+    with {:ok, dependencies} <- RuntimeState.resolve_dependencies_of(state, task_name),
+         {:ok, task} <- RuntimeState.find_task(state, task_name),
+         {:ok, task_value} <- Task.get_completed(task) do
+      td = task.definition
 
-  #   task_s = {:running_unapply, pid, value, Task.get_errors(branch_state)}
+      pid =
+        spawn_link(__MODULE__, :unapply_dispatch, [
+          self(),
+          td,
+          state.config,
+          dependencies,
+          task_value
+        ])
 
-  #   with {:ok, state} <- RuntimeState.set_branch_task(state, branch.name, task_s) do
-  #     {:ok, %{state | running: Map.put(state.running, pid, branch.name)}}
-  #   end
-  # end
+      task_state = {:running_unapply, pid, task_value, Task.get_errors(task)}
 
-  # @spec start(state :: RuntimeState.t(), branch_name :: atom) :: Util.result(RuntimeState.t())
-  # def start(state = %RuntimeState{}, branch_name) do
-  #   with {:ok, dependencies} <- RuntimeState.resolve_dependencies_of(state, branch_name),
-  #        {:ok, branch_state} <- RuntimeState.get_branch(state, branch_name),
-  #        {:ok, branch_value} <- Task.get_completed(branch_state) do
-  #     start_impl(state, branch_state, dependencies, branch_value)
-  #   end
-  # end
+      with {:ok, state} <- RuntimeState.set_task_state(state, td.name, task_state) do
+        # TODO should I be doing this?
+        progress = Progress.record_unapply_start(state.progress, task_name, pid)
+        {:ok, %{state | progress: progress}}
+      end
+    end
+  end
 end

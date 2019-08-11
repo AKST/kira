@@ -55,12 +55,15 @@ defmodule Kira2.Progress do
     }
   end
 
-  @spec record_apply_failure(progress :: t, name :: atom, pid :: pid) :: t
-  def record_apply_failure(progress, name, pid) do
+  @spec record_apply_failure(progress :: t, name :: atom, pid :: pid, retry_pid :: pid) :: t
+  def record_apply_failure(progress, name, pid, retry_pid) do
     %{
       progress
       | applies_running: MapSet.delete(progress.applies_running, name),
-        pid_cache: Map.drop(progress.pid_cache, [pid])
+        pid_cache:
+          progress.pid_cache
+          |> Map.drop([pid])
+          |> Map.put(retry_pid, name)
     }
   end
 
