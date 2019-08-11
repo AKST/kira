@@ -26,16 +26,16 @@ defmodule Kira2.TaskDefinition do
   @type unapply_error_payload(k, c, r) :: {:unapply_error, integer, unapply_payload(k, c, r)}
 
   @type dispatcher(k, c, r) ::
-      (apply_payload(k, c) -> apply_result(r))
-    | (unapply_payload(k, c, r) -> unapply_result())
-    | (apply_error_payload(k, c) -> error_result())
-    | (unapply_error_payload(k, c, r) -> error_result())
+          (apply_payload(k, c) -> apply_result(r))
+          | (unapply_payload(k, c, r) -> unapply_result())
+          | (apply_error_payload(k, c) -> error_result())
+          | (unapply_error_payload(k, c, r) -> error_result())
 
   @type t(k, c, r) :: %Kira2.TaskDefinition{
-    name: atom,
-    dependencies: dependencies(k),
-    dispatcher: dispatcher(k, c, r)
-  }
+          name: atom,
+          dependencies: dependencies(k),
+          dispatcher: dispatcher(k, c, r)
+        }
 
   @type t() :: t(atom, any, any)
 end

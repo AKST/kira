@@ -5,7 +5,8 @@ defmodule Kira.Util do
 
   @type result(a) :: {:ok, a} | {:error, any}
 
-  @spec result_reduce(lists :: Enum.t, value :: b, f :: (any, b -> result(b))) :: result(b) when b: var
+  @spec result_reduce(lists :: Enum.t(), value :: b, f :: (any, b -> result(b))) :: result(b)
+        when b: var
   def result_reduce(lists, value, f) do
     Enum.reduce(lists, {:ok, value}, fn
       next, {:ok, value} -> f.(next, value)

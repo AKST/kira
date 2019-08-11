@@ -37,7 +37,7 @@ defmodule Kira2.RuntimeState do
          config: config,
          timeout: timeout,
          pid_cache: %{},
-         progress: Progress.create(length(t_def_list)),
+         progress: Progress.create(length(t_def_list))
        }}
     else
       {:error, :duplicate_task_names}
@@ -120,7 +120,7 @@ defmodule Kira2.RuntimeState do
   def mark_as_applied(state = %__MODULE__{}, task_name, value) do
     update_blocking = fn state, task_name ->
       with {:ok, task} <- find_task(state, task_name),
-        do: map_tasks(state, task.blocking, &Task.drop_from_awaiting(&1, task_name))
+           do: map_tasks(state, task.blocking, &Task.drop_from_awaiting(&1, task_name))
     end
 
     with {:ok, pid} <- find_task_pid(state, task_name),
@@ -189,9 +189,9 @@ defmodule Kira2.RuntimeState do
     time_as_unix = fn {_, t} -> DateTime.to_unix(t) end
 
     state.tasks
-      |> Map.values()
-      |> Enum.reduce([], append_if_error)
-      |> Enum.sort_by(time_as_unix)
+    |> Map.values()
+    |> Enum.reduce([], append_if_error)
+    |> Enum.sort_by(time_as_unix)
   end
 
   @spec get_done(state :: t) :: %{required(atom) => any}
@@ -206,11 +206,12 @@ defmodule Kira2.RuntimeState do
     end)
   end
 
-  @spec map_tasks(i_state :: t, task_names :: Enum.t, (Task.t -> Task.t)) :: Util.result(t)
+  @spec map_tasks(i_state :: t, task_names :: Enum.t(), (Task.t() -> Task.t())) :: Util.result(t)
   def map_tasks(i_state, task_names, update) do
     Util.result_reduce(task_names, i_state, fn task_name, state ->
-      with {:ok, task} <- find_task(state, task_name),
-        do: {:ok, %{state | tasks: Map.put(state.tasks, task_name, update.(task))}}
+      with {:ok, task} <- find_task(state, task_name) do
+        {:ok, %{state | tasks: Map.put(state.tasks, task_name, update.(task))}}
+      end
     end)
   end
 

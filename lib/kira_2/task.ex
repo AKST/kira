@@ -158,4 +158,3 @@ defmodule Kira2.Task do
     %{task | blocking_unapply: MapSet.delete(task.blocking_unapply, other_task_name)}
   end
 end
-

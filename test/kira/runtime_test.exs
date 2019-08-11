@@ -114,8 +114,7 @@ defmodule Kira.RuntimeTest do
 
   describe "run_tasks" do
     test "works" do
-      result =
-        T.Runtime.run_tasks(self(), [Ok.a_branch(), Ok.b_branch(), Ok.c_branch(), Ok.d_branch()])
+      result = T.Runtime.run_tasks(self(), [Ok.a_branch(), Ok.b_branch(), Ok.c_branch(), Ok.d_branch()])
 
       assert result == {:ok, %{a: 2, b: 4, c: 5, d: 9}}
 

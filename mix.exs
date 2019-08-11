@@ -16,7 +16,7 @@ defmodule Kira.MixProject do
         extras: [
           "README.md",
           "CHANGELOG.md",
-          "CONTRIBUTING.md",
+          "CONTRIBUTING.md"
         ]
       ]
     ]
