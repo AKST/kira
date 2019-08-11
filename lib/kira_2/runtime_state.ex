@@ -1,20 +1,18 @@
 defmodule Kira2.RuntimeState do
   require Kira2.TaskDefinition, as: TaskDefinition
   require Kira2.Task, as: Task
-  require Kira.Progress, as: Progress
+  require Kira2.Progress, as: Progress
   require Kira.Util, as: Util
 
   @moduledoc false
 
-  defstruct [:config, :tasks, :pid_cache, :timeout, :progress]
+  defstruct [:config, :tasks, :timeout, :progress]
 
   @type tasks :: %{required(atom()) => Task.t()}
-  @type pid_cache :: %{required(pid) => atom}
   @type t() :: %__MODULE__{
           config: any,
           tasks: tasks(),
           timeout: timeout(),
-          pid_cache: pid_cache,
           progress: Progress.t()
         }
 
@@ -36,7 +34,6 @@ defmodule Kira2.RuntimeState do
          tasks: tasks,
          config: config,
          timeout: timeout,
-         pid_cache: %{},
          progress: Progress.create(length(t_def_list))
        }}
     else
@@ -59,27 +56,19 @@ defmodule Kira2.RuntimeState do
 
   @spec find_task_by_pid(state :: t(), pid :: pid) :: Util.result(Task.t())
   def find_task_by_pid(state, pid) do
-    fetch_error = runtime_state_error({:failed_to_find_task_from, pid})
-
-    with {:ok, task_name} <- Util.fetch(state.pid_cache, pid, fetch_error) do
+    with {:ok, task_name} <- Progress.find_task_by_pid(state.progress, pid) do
       find_task(state, task_name)
     end
   end
 
   @spec find_apply_ready(state :: t()) :: MapSet.t(atom())
   def find_apply_ready(state) do
-    for {t, state} <- state.tasks,
-        Task.apply_ready?(state),
-        into: MapSet.new(),
-        do: t
+    for {t, state} <- state.tasks, Task.apply_ready?(state), into: MapSet.new(), do: t
   end
 
   @spec find_unapply_ready(state :: t()) :: MapSet.t(atom())
   def find_unapply_ready(state) do
-    for {t, state} <- state.tasks,
-        Task.unapply_ready?(state),
-        into: MapSet.new(),
-        do: t
+    for {t, state} <- state.tasks, Task.unapply_ready?(state), into: MapSet.new(), do: t
   end
 
   @spec resolve_dependencies_of(state :: t, task_name :: atom) :: Util.result(map)
@@ -109,10 +98,8 @@ defmodule Kira2.RuntimeState do
     with {:ok, task} <- find_task(state, task_name),
          {:ok, state} <- set_task_state(state, task_name, {:running_apply, pid, Task.get_errors(task)}),
          {:ok, state} <- map_tasks(state, task.blocking_unapply, block_unapply_for_task) do
-      # record the fact the this pid is associated with this task name
-      pid_cache = Map.put(state.pid_cache, pid, task_name)
-      progress = Progress.record_apply_start(state.progress, task_name)
-      {:ok, %{state | pid_cache: pid_cache, progress: progress}}
+      progress = Progress.record_apply_start(state.progress, task_name, pid)
+      {:ok, %{state | progress: progress}}
     end
   end
 
@@ -126,9 +113,8 @@ defmodule Kira2.RuntimeState do
     with {:ok, pid} <- find_task_pid(state, task_name),
          {:ok, state} <- set_task_state(state, task_name, {:done_applied, value}),
          {:ok, state} <- update_blocking.(state, task_name) do
-      pid_cache = Map.drop(state.pid_cache, [pid])
-      progress = Progress.record_apply_done(state.progress, task_name)
-      {:ok, %{state | pid_cache: pid_cache, progress: progress}}
+      progress = Progress.record_apply_done(state.progress, task_name, pid)
+      {:ok, %{state | progress: progress}}
     end
   end
 
@@ -137,9 +123,8 @@ defmodule Kira2.RuntimeState do
     with {:ok, pid} <- find_task_pid(state, task_name),
          {:ok, state} <- set_task_state(state, task_name, :done_unapplied),
          {:ok, state} <- unblock_dependend_unapplys(state, task_name) do
-      pid_cache = Map.drop(state.pid_cache, [pid])
-      progress = Progress.record_unapply_done(state.progress, task_name)
-      {:ok, %{state | pid_cache: pid_cache, progress: progress}}
+      progress = Progress.record_unapply_done(state.progress, task_name, pid)
+      {:ok, %{state | progress: progress}}
     end
   end
 
