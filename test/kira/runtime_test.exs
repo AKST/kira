@@ -214,9 +214,9 @@ defmodule Kira.RuntimeTest do
       will_crash = %T.Branch{
         name: :bad_task,
         apply: fn _, _ ->
-          420 / 0
+          throw("error")
         end,
-        on_apply_error: fn parent, _, error, _ ->
+        on_apply_error: fn parent, _, _error, _ ->
           send(parent, :did_retry)
           {:retry, false}
         end
@@ -259,7 +259,7 @@ defmodule Kira.RuntimeTest do
         apply: fn _, _ ->
           if do_fail.(), do: {:error, 0}, else: {:ok, 0}
         end,
-        on_apply_error: fn parent, _, error, _ ->
+        on_apply_error: fn _parent, _, _error, _ ->
           {:retry, true}
         end
       }
