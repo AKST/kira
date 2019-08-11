@@ -1,13 +1,11 @@
 defmodule Kira.Util do
+  require Enum
+
   @moduledoc false
 
   @type result(a) :: {:ok, a} | {:error, any}
 
-  # @spec result_reduce(
-  #   lists :: [any],
-  #   value :: any,
-  #   f :: (any, any -> result(any))
-  # ) :: result(any)
+  @spec result_reduce(lists :: Enum.t, value :: b, f :: (any, b -> result(b))) :: result(b) when b: var
   def result_reduce(lists, value, f) do
     Enum.reduce(lists, {:ok, value}, fn
       next, {:ok, value} -> f.(next, value)
